@@ -1,0 +1,48 @@
+version: '2'
+
+networks:
+    hebbe1234-shared:
+
+services:
+  db:
+    image: mysql
+    container_name: MySQL
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    volumes:
+      - ./mysql-dump:/docker-entrypoint-initdb.d
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: cego
+    networks: 
+      - hebbe1234-shared
+  
+  adminer:
+    image: adminer
+    container_name: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    networks: 
+      - hebbe1234-shared
+
+  node:
+    container_name: Node
+    build: ./Node
+    command: npm run dev
+    volumes:
+      - ./Node:/usr/app/Node
+      - /usr/app/Node/node_modules
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: db
+      q: "SELECT null FROM users"
+    networks: 
+        - hebbe1234-shared
+
+volumes:
+  mariadb_data:
+    driver: local
