@@ -32,7 +32,7 @@ setTimeout(() => {
 			writeToFile(result)
 		})
 	})
-}, 5 * 1000)
+}, 1000)
 
 function writeToFile (sqlObjects) {
 	let fs = require('fs')
@@ -46,5 +46,6 @@ function writeToFile (sqlObjects) {
 			if (err) throw err
 		})
 	})
+
 	console.log('Saved!')
 }

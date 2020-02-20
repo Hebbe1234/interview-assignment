@@ -39,7 +39,7 @@ services:
       - db
     environment:
       DATABASE_URL: db
-      q: "SELECT null FROM users"
+      q: ${q}
     networks: 
         - hebbe1234-shared
 
