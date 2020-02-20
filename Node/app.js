@@ -9,9 +9,13 @@
 
 /* Allow for the database to start*/
 
-setTimeout(() => {
-	let mysql = require('mysql')
+const fs = require('fs')
+const mysql = require('mysql')
+const csv = require('csv-parser')
 
+const outFile = 'Output.csv'
+
+setTimeout(() => {
 	/* Connect to mysql databse*/
 	// TODO: Secure login information
 
@@ -29,23 +33,58 @@ setTimeout(() => {
 		con.query(String(process.env.q), (err, result) => {
 			if (err) throw err
 
-			writeToFile(result)
+			fs.unlinkSync(outFile)
+			writeToFile(result).then(v => verifyFile(result)).then(v => console.log('It is: ' + v))
 		})
 	})
-}, 1000)
+}, 5 * 1000)
 
 function writeToFile (sqlObjects) {
-	let fs = require('fs')
+	return new Promise((res, rej) => {
+		fs.appendFile(
+			outFile,
+			Object.keys(sqlObjects[0]).reduce((agr, cur) => agr + cur + ',', '').slice(0, -1) + '\n',
+			err => {
+				rej(err)
+			}
+		)
 
-	sqlObjects.forEach(e => {
-		let s = ''
-		Object.keys(e).forEach(k => {
-			s += e[k] + '|'
+		sqlObjects.forEach(e => {
+			let s = ''
+			Object.keys(e).forEach(k => {
+				s += e[k] + ','
+			})
+			fs.appendFile(outFile, s.slice(0, -1) + '\n', err => {
+				if (err) rej(err)
+			})
 		})
-		fs.appendFile('Text.txt', s + '\n', err => {
-			if (err) throw err
-		})
+
+		res()
+		console.log('Saved!')
 	})
+}
 
-	console.log('Saved!')
+function verifyFile (sqlObjects) {
+	return new Promise((res, rej) => {
+		let fileLength = 0
+		let ret = true
+		fs
+			.createReadStream(outFile)
+			.pipe(csv())
+			.on('data', row => {
+				let a = sqlObjects.some(e => {
+					return JSON.stringify(row) === JSON.stringify(e)
+				})
+				fileLength++
+				if (!a) {
+					console.log(row, 'false')
+					res('Halløj')
+				}
+			})
+			.on('end', () => {
+				console.log('Outfile.csv has been run through')
+				console.log(fileLength, sqlObjects.length)
+				res(fileLength === sqlObjects.length)
+			})
+	})
 }
